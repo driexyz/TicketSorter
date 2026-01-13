@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ticket Sorter v2</title>
+    <title>Ticket Sorter v3</title>
     <style>
         :root {
             --bg-color: #ffffff; --text-color: #333333; --card-bg: #f8f9fa;
@@ -23,18 +23,20 @@
         .output-box { margin-top: 10px; padding: 15px; border-radius: 8px; background-color: var(--card-bg); border: 1px solid var(--border-color); white-space: pre-wrap; font-family: monospace; }
         .section-header { display: flex; justify-content: space-between; align-items: baseline; margin-top: 25px; }
         h4 { margin: 0; color: var(--primary-btn); }
-        .count-badge { font-size: 0.8em; background: var(--border-color); padding: 2px 8px; border-radius: 10px; }
+        .count-badge { font-size: 0.8em; background: var(--border-color); padding: 2px 8px; border-radius: 10px; color: var(--text-color); }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h2>Ticket Sorter v2</h2>
+        <h2>Ticket Sorter v3</h2>
         <button onclick="toggleTheme()" id="themeBtn">🌙 Dark Mode</button>
     </div>
 
-    <p>Paste 5 columns: <b>Ticket, Preclosed, Closing, Status, Note</b></p>
-    <textarea id="inputData" placeholder="12345  10:00  10:30  Done  sudah"></textarea>
+    <p>Paste 5 columns: <b>Ticket, Preclosed, Closing, Status, "sudah preclosed"</b></p>
+    <textarea id="inputData" placeholder="Example:
+12345	-	10:30	Pending 	
+67890	09:00	09:30	Pending	  SudahPreclose"></textarea>
     
     <div class="btn-group">
         <button class="primary" onclick="processData()">Process Data</button>
@@ -55,7 +57,7 @@
 
         <div id="sudahSection" style="display:none;">
             <div class="section-header">
-                <h4>Sudah Closing:</h4>
+                <h4>Sudah / Done Closing:</h4>
                 <span id="countSudah" class="count-badge"></span>
             </div>
             <div id="outputSudah" class="output-box"></div>
@@ -85,14 +87,15 @@
                 if (parts.length < 5) parts = line.split(/\s{2,}/);
 
                 if (parts.length >= 5) {
-                    const item = {
-                        ticket: parts[0].trim(),
-                        pre: parts[1].trim(),
-                        close: parts[2].trim(),
-                        note: parts[4].trim().toLowerCase()
-                    };
+                    const ticket = parts[0].trim();
+                    const preTime = parts[1].trim();
+                    const closeTime = parts[2].trim();
+                    const note = parts[4].trim().toLowerCase();
 
-                    if (item.note.includes('sudah')) {
+                    const item = { ticket, pre: preTime, close: closeTime };
+
+                    // NEW LOGIC: Move to sudahList if note has "sudah" OR preclosed is "-"
+                    if (note.includes('sudah') || preTime === '-') {
                         sudahList.push(item);
                     } else {
                         preList.push(item);
