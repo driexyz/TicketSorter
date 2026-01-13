@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ticket Data Sorter</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; max-width: 800px; margin: auto; line-height: 1.6; }
+        textarea { width: 100%; height: 150px; margin-bottom: 10px; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
+        button { background-color: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        button:hover { background-color: #0056b3; }
+        #output { background-color: #f8f9fa; padding: 15px; border: 1px solid #ddd; border-radius: 4px; white-space: pre-wrap; margin-top: 20px; }
+        .copy-btn { background-color: #28a745; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <h2>Ticket Sorter & Formatter</h2>
+    <p>Paste your spreadsheet data below (Ticket, Preclosed, Closing):</p>
+    
+    <textarea id="inputData" placeholder="Example:
+12345	10:30	11:00
+67890	09:15	09:45"></textarea>
+    
+    <button onclick="processData()">Sort and Format</button>
+
+    <div id="outputContainer" style="display:none;">
+        <h3>Result:</h3>
+        <div id="output"></div>
+        <button class="copy-btn" onclick="copyToClipboard()">Copy Result</button>
+    </div>
+
+    <script>
+        function processData() {
+            const input = document.getElementById('inputData').value.trim();
+            if (!input) return;
+
+            // Split by lines and then by tabs (standard for sheet copies)
+            let lines = input.split('\n');
+            let dataArr = [];
+
+            lines.forEach(line => {
+                let parts = line.split(/\s+/); // Splits by tabs or spaces
+                if (parts.length >= 3) {
+                    dataArr.push({
+                        ticket: parts[0],
+                        preclosed: parts[1],
+                        closing: parts[2]
+                    });
+                }
+            });
+
+            // Sort by preclosed time
+            dataArr.sort((a, b) => a.preclosed.localeCompare(b.preclosed));
+
+            // Format the output
+            let result = dataArr.map(item => 
+                `${item.ticket} preclosed is ${item.preclosed} closing ${item.closing}`
+            ).join('\n');
+
+            document.getElementById('output').innerText = result;
+            document.getElementById('outputContainer').style.display = 'block';
+        }
+
+        function copyToClipboard() {
+            const text = document.getElementById('output').innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Copied to clipboard!');
+            });
+        }
+    </script>
+</body>
+</html>
