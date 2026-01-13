@@ -3,59 +3,121 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ticket Data Sorter</title>
+    <title>Ticket Sorter Pro</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; max-width: 800px; margin: auto; line-height: 1.6; }
-        textarea { width: 100%; height: 150px; margin-bottom: 10px; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
-        button { background-color: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 16px; }
-        button:hover { background-color: #0056b3; }
-        #output { background-color: #f8f9fa; padding: 15px; border: 1px solid #ddd; border-radius: 4px; white-space: pre-wrap; margin-top: 20px; }
-        .copy-btn { background-color: #28a745; margin-top: 10px; }
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #333333;
+            --card-bg: #f8f9fa;
+            --border-color: #dddddd;
+            --primary-btn: #007bff;
+            --primary-hover: #0056b3;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #121212;
+            --text-color: #e0e0e0;
+            --card-bg: #1e1e1e;
+            --border-color: #333333;
+            --primary-btn: #3700b3;
+            --primary-hover: #4a00e0;
+        }
+
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: var(--bg-color); 
+            color: var(--text-color);
+            transition: all 0.3s ease;
+            padding: 20px; 
+            max-width: 700px; 
+            margin: auto; 
+        }
+
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        
+        textarea { 
+            width: 100%; height: 180px; padding: 12px; border-radius: 8px;
+            border: 2px solid var(--border-color); 
+            background-color: var(--card-bg); 
+            color: var(--text-color);
+            box-sizing: border-box; resize: vertical;
+        }
+
+        .btn-group { margin-top: 15px; display: flex; gap: 10px; }
+
+        button { 
+            padding: 10px 20px; border-radius: 6px; border: none; 
+            cursor: pointer; font-weight: bold; transition: opacity 0.2s;
+        }
+
+        .primary { background-color: var(--primary-btn); color: white; }
+        .secondary { background-color: #28a745; color: white; }
+        .toggle-btn { background-color: #6c757d; color: white; }
+
+        button:hover { opacity: 0.8; }
+
+        #output { 
+            margin-top: 25px; padding: 15px; border-radius: 8px;
+            background-color: var(--card-bg); 
+            border: 1px dashed var(--border-color);
+            white-space: pre-wrap; font-family: monospace;
+        }
     </style>
 </head>
 <body>
 
-    <h2>Ticket Sorter & Formatter</h2>
-    <p>Paste your spreadsheet data below (Ticket, Preclosed, Closing):</p>
+    <div class="header">
+        <h2>Ticket Sorter</h2>
+        <button class="toggle-btn" onclick="toggleTheme()" id="themeBtn">🌙 Dark Mode</button>
+    </div>
+
+    <p>Paste spreadsheet columns here:</p>
+    <textarea id="inputData" placeholder="Ticket#	Preclosed	Closing"></textarea>
     
-    <textarea id="inputData" placeholder="Example:
-12345	10:30	11:00
-67890	09:15	09:45"></textarea>
-    
-    <button onclick="processData()">Sort and Format</button>
+    <div class="btn-group">
+        <button class="primary" onclick="processData()">Sort & Format</button>
+        <button onclick="clearAll()">Clear</button>
+    </div>
 
     <div id="outputContainer" style="display:none;">
         <h3>Result:</h3>
         <div id="output"></div>
-        <button class="copy-btn" onclick="copyToClipboard()">Copy Result</button>
+        <button class="secondary" onclick="copyToClipboard()">Copy to Clipboard</button>
     </div>
 
     <script>
+        function toggleTheme() {
+            const body = document.documentElement;
+            const btn = document.getElementById('themeBtn');
+            if (body.getAttribute('data-theme') === 'dark') {
+                body.removeAttribute('data-theme');
+                btn.innerText = "🌙 Dark Mode";
+            } else {
+                body.setAttribute('data-theme', 'dark');
+                btn.innerText = "☀️ Light Mode";
+            }
+        }
+
         function processData() {
             const input = document.getElementById('inputData').value.trim();
             if (!input) return;
 
-            // Split by lines and then by tabs (standard for sheet copies)
             let lines = input.split('\n');
             let dataArr = [];
 
             lines.forEach(line => {
-                let parts = line.split(/\s+/); // Splits by tabs or spaces
+                // Splits by Tab or two/more spaces
+                let parts = line.split(/\t| {2,}/).map(p => p.trim()).filter(p => p.length > 0);
                 if (parts.length >= 3) {
-                    dataArr.push({
-                        ticket: parts[0],
-                        preclosed: parts[1],
-                        closing: parts[2]
-                    });
+                    dataArr.push({ ticket: parts[0], pre: parts[1], close: parts[2] });
                 }
             });
 
-            // Sort by preclosed time
-            dataArr.sort((a, b) => a.preclosed.localeCompare(b.preclosed));
+            // Sort by Preclosed Time
+            dataArr.sort((a, b) => a.pre.localeCompare(b.pre));
 
-            // Format the output
             let result = dataArr.map(item => 
-                `${item.ticket} preclosed is ${item.preclosed} closing ${item.closing}`
+                `${item.ticket} preclosed is ${item.pre} closing ${item.close}`
             ).join('\n');
 
             document.getElementById('output').innerText = result;
@@ -64,9 +126,12 @@
 
         function copyToClipboard() {
             const text = document.getElementById('output').innerText;
-            navigator.clipboard.writeText(text).then(() => {
-                alert('Copied to clipboard!');
-            });
+            navigator.clipboard.writeText(text).then(() => alert('Copied!'));
+        }
+
+        function clearAll() {
+            document.getElementById('inputData').value = '';
+            document.getElementById('outputContainer').style.display = 'none';
         }
     </script>
 </body>
