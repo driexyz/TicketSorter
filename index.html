@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ticket Sorter v4</title>
+    <title>Ticket Sorter v5</title>
     <style>
         :root {
             --bg-color: #ffffff; --text-color: #333333; --card-bg: #f8f9fa;
@@ -24,19 +24,17 @@
         .section-header { display: flex; justify-content: space-between; align-items: baseline; margin-top: 25px; }
         h4 { margin: 0; color: var(--primary-btn); }
         .count-badge { font-size: 0.8em; background: var(--border-color); padding: 2px 8px; border-radius: 10px; color: var(--text-color); }
-        .error-msg { color: #dc3545; font-size: 0.9em; margin-top: 5px; display: none; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h2>Ticket Sorter v4</h2>
+        <h2>Ticket Sorter v5</h2>
         <button onclick="toggleTheme()" id="themeBtn">🌙 Dark Mode</button>
     </div>
 
-    <p>Paste your Sheet data here (expects 5 columns):</p>
-    <textarea id="inputData" placeholder="Ticket    Preclosed    Closing    Status	Note"></textarea>
-    <div id="errorBox" class="error-msg">Some rows could not be processed. Ensure you copied all 5 columns.</div>
+    <p>Paste Sheet data (5 columns):</p>
+    <textarea id="inputData" placeholder="Ticket	    Preclosed	    Closing	    Status	   Note"></textarea>
     
     <div class="btn-group">
         <button class="primary" onclick="processData()">Process Data</button>
@@ -81,59 +79,49 @@
             let lines = input.split('\n');
             let preList = [];
             let sudahList = [];
-            let errorFound = false;
 
             lines.forEach(line => {
-                if (!line.trim()) return; // Skip totally empty lines
+                if (!line.trim()) return;
 
-                // Split by TAB first (primary for Sheets)
                 let parts = line.split('\t');
-                
-                // If tabs aren't found, try splitting by multiple spaces
-                if (parts.length < 2) {
-                    parts = line.split(/\s{2,}/);
-                }
+                if (parts.length < 2) parts = line.split(/\s{2,}/);
 
-                // We need at least Ticket (0), Preclosed (1), and Closing (2)
-                // Note is (4). If column 4 is missing, we treat it as empty.
                 if (parts.length >= 3) {
-                    const ticket = parts[0]?.trim() || "Unknown";
+                    const ticket = parts[0]?.trim() || "";
                     const preTime = parts[1]?.trim() || "";
                     const closeTime = parts[2]?.trim() || "";
                     const note = (parts[4] || "").trim().toLowerCase();
 
                     const item = { ticket, pre: preTime, close: closeTime };
 
+                    // Logic trigger for Sudah category
                     if (note.includes('sudah') || preTime === '-') {
                         sudahList.push(item);
                     } else {
                         preList.push(item);
                     }
-                } else {
-                    errorFound = true;
                 }
             });
 
-            // Sort by preclosed time (handling '-' as a string)
-            const timeSort = (a, b) => a.pre.localeCompare(b.pre);
-            preList.sort(timeSort);
-            sudahList.sort(timeSort);
+            // FIXED SORTING:
+            // 1. Pending list sorts by Preclosed Time
+            preList.sort((a, b) => a.pre.localeCompare(b.pre));
 
-            // Output Preclosed
+            // 2. Sudah list sorts by Closing Time (since Preclosed might be '-')
+            sudahList.sort((a, b) => a.close.localeCompare(b.close));
+
+            // Generate Output
             document.getElementById('outputPre').innerText = preList.map(i => 
-                `${i.ticket} preclosed ${i.pre} closing ${i.close}`).join('\n');
+                `${i.ticket} preclosed is ${i.pre} closing ${i.close}`).join('\n');
             document.getElementById('countPre').innerText = preList.length + " tickets";
 
-            // Output Sudah
             document.getElementById('outputSudah').innerText = sudahList.map(i => 
                 `${i.ticket} closing ${i.close}`).join('\n');
             document.getElementById('countSudah').innerText = sudahList.length + " tickets";
 
-            // UI logic
             document.getElementById('resultsArea').style.display = 'block';
             document.getElementById('sudahSection').style.display = sudahList.length > 0 ? 'block' : 'none';
             document.getElementById('preclosedSection').style.display = preList.length > 0 ? 'block' : 'none';
-            document.getElementById('errorBox').style.display = errorFound ? 'block' : 'none';
         }
 
         function copyText(id) {
@@ -148,7 +136,6 @@
         function clearAll() {
             document.getElementById('inputData').value = '';
             document.getElementById('resultsArea').style.display = 'none';
-            document.getElementById('errorBox').style.display = 'none';
         }
     </script>
 </body>
